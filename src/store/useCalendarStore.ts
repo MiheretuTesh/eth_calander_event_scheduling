@@ -93,8 +93,16 @@ export const useCalendarStore = create<CalendarState>()(
   persist(
     (set, get) => ({
       // ── Initial State ──────────────────────────────────────
-      viewMode: 'gregorian',
-      currentDate: startOfMonth(new Date()),
+      viewMode: 'ethiopian',
+      currentDate: (() => {
+        const today = new Date();
+        const eth = convertGregorianToEthiopian(today);
+        return convertEthiopianToGregorian({
+          year: eth.year,
+          month: eth.month,
+          day: 1,
+        });
+      })(),
       selectedDate: null,
       events: [],
       holidays: buildDefaultHolidays(),
@@ -334,9 +342,9 @@ export const useCalendarStore = create<CalendarState>()(
           const parsed = JSON.parse(str);
           // Rehydrate Date objects
           if (parsed?.state) {
-            if (parsed.state.currentDate) {
-              parsed.state.currentDate = new Date(parsed.state.currentDate);
-            }
+            // Delete viewMode and currentDate so we default to Ethiopian and current month on app start
+            delete parsed.state.viewMode;
+            delete parsed.state.currentDate;
             if (parsed.state.selectedDate) {
               parsed.state.selectedDate = new Date(parsed.state.selectedDate);
             }
@@ -353,8 +361,6 @@ export const useCalendarStore = create<CalendarState>()(
       // Only persist these keys
       partialize: (state) =>
         ({
-          viewMode: state.viewMode,
-          currentDate: state.currentDate,
           events: state.events,
           holidays: state.holidays,
         }) as unknown as CalendarState,
