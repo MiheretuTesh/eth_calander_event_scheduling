@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CalendarEvent, EthiopianDate, ViewMode } from '../types/calendar';
+import type {
+  CalendarEvent,
+  EthiopianDate,
+  ManagedHoliday,
+  Recurrence,
+  ViewMode,
+} from '../types/calendar';
 import {
   convertGregorianToEthiopian,
   convertEthiopianToGregorian,
@@ -12,6 +18,8 @@ import {
   isGregorianLeapYear,
   navigateEthiopianMonth,
 } from '../utils/gregorianDate';
+import { eventsForDate } from '../utils/recurrence';
+import { buildDefaultHolidays } from '../data/defaultHolidays';
 import { addMonths, startOfMonth } from 'date-fns';
 
 // ─── Store State ───────────────────────────────────────────────
@@ -24,10 +32,14 @@ interface CalendarState {
   // Events
   events: CalendarEvent[];
 
+  // Holidays (editable)
+  holidays: ManagedHoliday[];
+
   // UI state
   isEventModalOpen: boolean;
   editingEvent: CalendarEvent | null;
   isImportDialogOpen: boolean;
+  isHolidayDialogOpen: boolean;
 
   // Actions
   setViewMode: (mode: ViewMode) => void;
@@ -35,8 +47,18 @@ interface CalendarState {
   goToToday: () => void;
   selectDate: (date: Date | null) => void;
 
-  addEvent: (title: string, description: string, date: Date) => void;
-  updateEvent: (id: string, title: string, description: string) => void;
+  addEvent: (
+    title: string,
+    description: string,
+    date: Date,
+    recurrence: Recurrence
+  ) => void;
+  updateEvent: (
+    id: string,
+    title: string,
+    description: string,
+    recurrence: Recurrence
+  ) => void;
   deleteEvent: (id: string) => void;
 
   openEventModal: (event?: CalendarEvent) => void;
@@ -45,6 +67,14 @@ interface CalendarState {
   openImportDialog: () => void;
   closeImportDialog: () => void;
   importPreviousYearEvents: () => void;
+
+  // Holiday actions
+  openHolidayDialog: () => void;
+  closeHolidayDialog: () => void;
+  toggleHoliday: (id: string) => void;
+  deleteHoliday: (id: string) => void;
+  addHoliday: (holiday: Omit<ManagedHoliday, 'id' | 'enabled' | 'custom'>) => void;
+  resetHolidays: () => void;
 
   getEventsForDate: (date: Date) => CalendarEvent[];
 }
@@ -67,9 +97,11 @@ export const useCalendarStore = create<CalendarState>()(
       currentDate: startOfMonth(new Date()),
       selectedDate: null,
       events: [],
+      holidays: buildDefaultHolidays(),
       isEventModalOpen: false,
       editingEvent: null,
       isImportDialogOpen: false,
+      isHolidayDialogOpen: false,
 
       // ── Navigation ─────────────────────────────────────────
       setViewMode: (mode) => {
@@ -87,7 +119,23 @@ export const useCalendarStore = create<CalendarState>()(
       },
 
       goToToday: () => {
-        set({ currentDate: startOfMonth(new Date()), selectedDate: new Date() });
+        set((state) => {
+          const today = new Date();
+          if (state.viewMode === 'ethiopian') {
+            // Jump to the 1st of the Ethiopian month that *today* falls in,
+            // not the Gregorian month start (which lands in the prior EC month).
+            const eth = convertGregorianToEthiopian(today);
+            return {
+              currentDate: convertEthiopianToGregorian({
+                year: eth.year,
+                month: eth.month,
+                day: 1,
+              }),
+              selectedDate: today,
+            };
+          }
+          return { currentDate: startOfMonth(today), selectedDate: today };
+        });
       },
 
       selectDate: (date) => {
@@ -95,7 +143,7 @@ export const useCalendarStore = create<CalendarState>()(
       },
 
       // ── Events CRUD ────────────────────────────────────────
-      addEvent: (title, description, date) => {
+      addEvent: (title, description, date, recurrence) => {
         const eth = convertGregorianToEthiopian(date);
         const newEvent: CalendarEvent = {
           id: crypto.randomUUID(),
@@ -104,6 +152,8 @@ export const useCalendarStore = create<CalendarState>()(
           gregorianDate: makeDateKey(date),
           ethiopianDate: makeEthiopianKey(eth),
           createdAt: new Date().toISOString(),
+          recurrence,
+          recurrenceCalendar: get().viewMode,
         };
         set((state) => ({
           events: [...state.events, newEvent],
@@ -112,10 +162,10 @@ export const useCalendarStore = create<CalendarState>()(
         }));
       },
 
-      updateEvent: (id, title, description) => {
+      updateEvent: (id, title, description, recurrence) => {
         set((state) => ({
           events: state.events.map((e) =>
-            e.id === id ? { ...e, title, description } : e
+            e.id === id ? { ...e, title, description, recurrence } : e
           ),
           isEventModalOpen: false,
           editingEvent: null,
@@ -182,6 +232,8 @@ export const useCalendarStore = create<CalendarState>()(
               gregorianDate: formatGregorianDateString(newGregorianDate),
               ethiopianDate: formatEthiopianDateString(newEthDate),
               createdAt: new Date().toISOString(),
+              recurrence: e.recurrence,
+              recurrenceCalendar: e.recurrenceCalendar,
             };
           });
         } else {
@@ -218,6 +270,8 @@ export const useCalendarStore = create<CalendarState>()(
               gregorianDate: formatGregorianDateString(newGregorianDate),
               ethiopianDate: formatEthiopianDateString(newEthDate),
               createdAt: new Date().toISOString(),
+              recurrence: e.recurrence,
+              recurrenceCalendar: e.recurrenceCalendar,
             };
           });
         }
@@ -228,10 +282,46 @@ export const useCalendarStore = create<CalendarState>()(
         }));
       },
 
+      // ── Holidays ───────────────────────────────────────────
+      openHolidayDialog: () => {
+        set({ isHolidayDialogOpen: true });
+      },
+
+      closeHolidayDialog: () => {
+        set({ isHolidayDialogOpen: false });
+      },
+
+      toggleHoliday: (id) => {
+        set((state) => ({
+          holidays: state.holidays.map((h) =>
+            h.id === id ? { ...h, enabled: !h.enabled } : h
+          ),
+        }));
+      },
+
+      deleteHoliday: (id) => {
+        set((state) => ({
+          holidays: state.holidays.filter((h) => h.id !== id),
+        }));
+      },
+
+      addHoliday: (holiday) => {
+        const newHoliday: ManagedHoliday = {
+          ...holiday,
+          id: crypto.randomUUID(),
+          enabled: true,
+          custom: true,
+        };
+        set((state) => ({ holidays: [...state.holidays, newHoliday] }));
+      },
+
+      resetHolidays: () => {
+        set({ holidays: buildDefaultHolidays() });
+      },
+
       // ── Query ──────────────────────────────────────────────
       getEventsForDate: (date) => {
-        const key = makeDateKey(date);
-        return get().events.filter((e) => e.gregorianDate === key);
+        return eventsForDate(get().events, date);
       },
     }),
     {
@@ -266,6 +356,7 @@ export const useCalendarStore = create<CalendarState>()(
           viewMode: state.viewMode,
           currentDate: state.currentDate,
           events: state.events,
+          holidays: state.holidays,
         }) as unknown as CalendarState,
     }
   )

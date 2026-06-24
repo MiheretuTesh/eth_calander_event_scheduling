@@ -1,4 +1,5 @@
 import type { EthiopianDate } from '../types/calendar';
+import { toGeez } from './geez';
 
 // ─── Constants ─────────────────────────────────────────────────
 /**
@@ -184,6 +185,75 @@ export function convertEthiopianToGregorian(eth: EthiopianDate): Date {
   return new Date(g.year, g.month - 1, g.day);
 }
 
+// ─── Ethiopian Easter (Fasika) Computation ─────────────────────
+/**
+ * Cache for Ethiopian Easter dates (keyed by Ethiopian year).
+ */
+const easterCache = new Map<number, EthiopianDate>();
+
+/**
+ * Computes the Ethiopian Easter (Fasika/Tensae) date for a given Ethiopian year.
+ *
+ * Uses the Julian Easter (Computus) algorithm, since the Ethiopian Orthodox
+ * Church follows the Alexandrian computation identical to Julian Easter.
+ *
+ * Steps:
+ *   1. Map Ethiopian year → Gregorian year for the spring period (Y + 8)
+ *   2. Compute Julian Easter using the Anonymous Gregorian Algorithm for Julian calendar
+ *   3. Convert Julian date → Gregorian by adding 13 days (21st century offset)
+ *   4. Convert the Gregorian date → Ethiopian date
+ *
+ * Verified against known Orthodox Easter dates:
+ *   - 2017 EC → April 20, 2025 GC → Miyazia 12, 2017 ✓
+ *   - 2018 EC → April 12, 2026 GC → Miyazia 4, 2018  ✓
+ */
+export function computeEthiopianEaster(ethYear: number): EthiopianDate {
+  const cached = easterCache.get(ethYear);
+  if (cached) return cached;
+
+  const gregYear = ethYear + 8;
+
+  // Julian Easter computation (Anonymous Algorithm)
+  const a = gregYear % 4;
+  const b = gregYear % 7;
+  const c = gregYear % 19;
+  const d = (19 * c + 15) % 30;
+  const e = (2 * a + 4 * b - d + 34) % 7;
+  const julianMonth = Math.floor((d + e + 114) / 31); // 3 = March, 4 = April
+  const julianDay = ((d + e + 114) % 31) + 1;
+
+  // Convert Julian → Gregorian by adding 13 days (valid for 1900–2099)
+  const JULIAN_OFFSET = 13;
+  let gregMonth = julianMonth;
+  let gregDay = julianDay + JULIAN_OFFSET;
+
+  // Days in each Gregorian month (1-indexed)
+  const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if ((gregYear % 4 === 0 && gregYear % 100 !== 0) || gregYear % 400 === 0) {
+    daysInMonth[2] = 29;
+  }
+
+  // Handle month overflow
+  if (gregDay > daysInMonth[gregMonth]) {
+    gregDay -= daysInMonth[gregMonth];
+    gregMonth += 1;
+  }
+
+  const gregorianEaster = new Date(gregYear, gregMonth - 1, gregDay);
+  const result = convertGregorianToEthiopian(gregorianEaster);
+
+  easterCache.set(ethYear, result);
+  return result;
+}
+
+/**
+ * Returns the Gregorian Date for Ethiopian Easter of a given Ethiopian year.
+ */
+export function getEthiopianEasterGregorian(ethYear: number): Date {
+  const eth = computeEthiopianEaster(ethYear);
+  return convertEthiopianToGregorian(eth);
+}
+
 // ─── Formatting / Parsing ──────────────────────────────────────
 /**
  * Formats an Ethiopian date as "YYYY-MM-DD" string.
@@ -204,11 +274,11 @@ export function parseEthiopianDateString(str: string): EthiopianDate {
 }
 
 /**
- * Returns a human-readable label for an Ethiopian date.
- * e.g. "Meskerem 1, 2018"
+ * Returns a human-readable label for an Ethiopian date, with the day and year
+ * rendered in Ge'ez numerals. e.g. "Meskerem ፩, ፳፻፲፰"
  */
 export function formatEthiopianDateLabel(eth: EthiopianDate): string {
-  return `${ETHIOPIAN_MONTH_NAMES[eth.month]} ${eth.day}, ${eth.year}`;
+  return `${ETHIOPIAN_MONTH_NAMES[eth.month]} ${toGeez(eth.day)}, ${toGeez(eth.year)}`;
 }
 
 /**

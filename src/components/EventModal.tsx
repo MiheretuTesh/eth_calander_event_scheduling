@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCalendarStore } from '../store/useCalendarStore';
+import type { Recurrence } from '../types/calendar';
+
+const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
+  { value: 'none', label: 'Does not repeat' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 weeks' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly (every 3 months)' },
+  { value: 'yearly', label: 'Yearly' },
+];
 
 export function EventModal() {
   const {
@@ -9,18 +20,22 @@ export function EventModal() {
     addEvent,
     updateEvent,
     selectedDate,
+    viewMode,
   } = useCalendarStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [recurrence, setRecurrence] = useState<Recurrence>('none');
 
   useEffect(() => {
     if (editingEvent) {
       setTitle(editingEvent.title);
       setDescription(editingEvent.description);
+      setRecurrence(editingEvent.recurrence ?? 'none');
     } else {
       setTitle('');
       setDescription('');
+      setRecurrence('none');
     }
   }, [editingEvent, isEventModalOpen]);
 
@@ -30,12 +45,12 @@ export function EventModal() {
       if (!title.trim()) return;
 
       if (editingEvent) {
-        updateEvent(editingEvent.id, title.trim(), description.trim());
+        updateEvent(editingEvent.id, title.trim(), description.trim(), recurrence);
       } else if (selectedDate) {
-        addEvent(title.trim(), description.trim(), selectedDate);
+        addEvent(title.trim(), description.trim(), selectedDate, recurrence);
       }
     },
-    [title, description, editingEvent, selectedDate, addEvent, updateEvent]
+    [title, description, recurrence, editingEvent, selectedDate, addEvent, updateEvent]
   );
 
   const handleKeyDown = useCallback(
@@ -103,6 +118,35 @@ export function EventModal() {
                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
                          outline-none transition-shadow text-sm resize-none"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="event-recurrence"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Repeats
+            </label>
+            <select
+              id="event-recurrence"
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300
+                         focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+                         outline-none transition-shadow text-sm bg-white"
+            >
+              {RECURRENCE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {recurrence !== 'none' && recurrence !== 'daily' &&
+              recurrence !== 'weekly' && recurrence !== 'biweekly' && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Repeats on the {viewMode === 'ethiopian' ? 'Ethiopian' : 'Gregorian'} calendar
+                </p>
+              )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

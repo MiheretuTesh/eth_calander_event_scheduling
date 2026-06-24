@@ -184,6 +184,41 @@ export function navigateEthiopianMonth(
 }
 
 /**
+ * Returns the span of Gregorian months an Ethiopian month covers, e.g.
+ * "June – July 2026" or "December 2025 – January 2026". An Ethiopian month
+ * (30 days) almost always straddles two Gregorian months.
+ */
+export function getGregorianSpanForEthiopianMonth(
+  ethYear: number,
+  ethMonth: number
+): string {
+  const days = getEthiopianMonthDays(ethYear, ethMonth);
+  const first = convertEthiopianToGregorian({
+    year: ethYear,
+    month: ethMonth,
+    day: 1,
+  });
+  const last = convertEthiopianToGregorian({
+    year: ethYear,
+    month: ethMonth,
+    day: days,
+  });
+
+  const firstMonth = GREGORIAN_MONTH_NAMES[first.getMonth()];
+  const lastMonth = GREGORIAN_MONTH_NAMES[last.getMonth()];
+  const firstYear = first.getFullYear();
+  const lastYear = last.getFullYear();
+
+  if (firstMonth === lastMonth && firstYear === lastYear) {
+    return `${firstMonth} ${firstYear}`;
+  }
+  if (firstYear === lastYear) {
+    return `${firstMonth} – ${lastMonth} ${lastYear}`;
+  }
+  return `${firstMonth} ${firstYear} – ${lastMonth} ${lastYear}`;
+}
+
+/**
  * Get all months in a Gregorian year (0-11).
  */
 export function getGregorianYearMonths(_year: number): number[] {

@@ -1,54 +1,69 @@
-import type { ResolvedHoliday } from '../types/calendar';
-import { ETHIOPIAN_HOLIDAYS } from '../data/ethiopianHolidays';
-import { GREGORIAN_HOLIDAYS } from '../data/gregorianHolidays';
-import { convertGregorianToEthiopian } from './ethiopianDate';
+import type { ManagedHoliday, ResolvedHoliday, ViewMode } from '../types/calendar';
+import {
+  convertGregorianToEthiopian,
+  getEthiopianEasterGregorian,
+} from './ethiopianDate';
+import { addDays, isSameDay } from 'date-fns';
 
 /**
- * Returns all holidays that fall on a given Gregorian date.
- * Checks both Gregorian holidays (by month/day) and
- * Ethiopian holidays (by converting the date first).
+ * Returns holidays for a given date filtered by the active view mode and the
+ * user's editable holiday list (only enabled entries are considered).
+ *
+ * - **Gregorian mode**: Gregorian fixed holidays only.
+ * - **Ethiopian mode**: Ethiopian fixed (by EC date), Ethiopian holidays
+ *   observed by GC date, and moveable holidays computed from Ethiopian Easter.
  */
-export function getHolidaysForDate(date: Date): ResolvedHoliday[] {
-  const holidays: ResolvedHoliday[] = [];
+export function getHolidaysForDate(
+  date: Date,
+  viewMode: ViewMode,
+  holidays: ManagedHoliday[]
+): ResolvedHoliday[] {
+  const resolved: ResolvedHoliday[] = [];
+  const enabled = holidays.filter((h) => h.enabled);
 
-  // Check Gregorian holidays
-  const gMonth = date.getMonth() + 1; // 1-indexed
+  const gMonth = date.getMonth() + 1;
   const gDay = date.getDate();
 
-  for (const h of GREGORIAN_HOLIDAYS) {
-    if (h.month === gMonth && h.day === gDay) {
-      holidays.push({ name: h.name, type: 'gregorian' });
+  if (viewMode === 'gregorian') {
+    for (const h of enabled) {
+      if (h.kind === 'gregorian-fixed' && h.month === gMonth && h.day === gDay) {
+        resolved.push({ name: h.name, type: 'gregorian' });
+      }
     }
+    return resolved;
   }
 
-  // Check Ethiopian holidays
+  // ── Ethiopian mode ──
   const eth = convertGregorianToEthiopian(date);
-  for (const h of ETHIOPIAN_HOLIDAYS) {
-    if (h.month === eth.month && h.day === eth.day) {
-      holidays.push({ name: h.name, type: 'ethiopian' });
+  const easterGregorian = getEthiopianEasterGregorian(eth.year);
+
+  for (const h of enabled) {
+    if (h.kind === 'ethiopian-fixed') {
+      if (h.month === eth.month && h.day === eth.day) {
+        resolved.push({ name: h.name, type: 'ethiopian' });
+      }
+    } else if (h.kind === 'ethiopian-gc') {
+      if (h.month === gMonth && h.day === gDay) {
+        resolved.push({ name: h.name, type: 'ethiopian' });
+      }
+    } else if (h.kind === 'ethiopian-moveable') {
+      const holidayDate = addDays(easterGregorian, h.offsetFromEaster ?? 0);
+      if (isSameDay(date, holidayDate)) {
+        resolved.push({ name: h.name, type: 'ethiopian' });
+      }
     }
   }
 
-  return holidays;
+  return resolved;
 }
 
 /**
- * Check if a given date has any holidays.
+ * Check if a given date has any holidays for the current view mode.
  */
-export function hasHoliday(date: Date): boolean {
-  return getHolidaysForDate(date).length > 0;
-}
-
-/**
- * Check if a given date has an Ethiopian holiday.
- */
-export function hasEthiopianHoliday(date: Date): boolean {
-  return getHolidaysForDate(date).some((h) => h.type === 'ethiopian');
-}
-
-/**
- * Check if a given date has a Gregorian holiday.
- */
-export function hasGregorianHoliday(date: Date): boolean {
-  return getHolidaysForDate(date).some((h) => h.type === 'gregorian');
+export function hasHoliday(
+  date: Date,
+  viewMode: ViewMode,
+  holidays: ManagedHoliday[]
+): boolean {
+  return getHolidaysForDate(date, viewMode, holidays).length > 0;
 }

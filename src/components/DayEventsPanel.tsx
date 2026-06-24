@@ -6,27 +6,36 @@ import {
   formatEthiopianDateLabel,
 } from '../utils/ethiopianDate';
 import { getHolidaysForDate } from '../utils/holidayUtils';
+import { eventsForDate } from '../utils/recurrence';
+
+const RECURRENCE_LABELS: Record<string, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  biweekly: 'Every 2 weeks',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+};
 
 export function DayEventsPanel() {
   const {
     selectedDate,
     selectDate,
+    viewMode,
     events,
+    holidays: allHolidays,
     openEventModal,
     deleteEvent,
   } = useCalendarStore();
 
   const dayEvents = useMemo(() => {
     if (!selectedDate) return [];
-    const key = `${selectedDate.getFullYear()}-${String(
-      selectedDate.getMonth() + 1
-    ).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-    return events.filter((e) => e.gregorianDate === key);
+    return eventsForDate(events, selectedDate);
   }, [selectedDate, events]);
 
   const holidays = useMemo(
-    () => (selectedDate ? getHolidaysForDate(selectedDate) : []),
-    [selectedDate]
+    () => (selectedDate ? getHolidaysForDate(selectedDate, viewMode, allHolidays) : []),
+    [selectedDate, viewMode, allHolidays]
   );
 
   if (!selectedDate) {
@@ -51,6 +60,7 @@ export function DayEventsPanel() {
   }
 
   const ethDate = convertGregorianToEthiopian(selectedDate);
+  const holidayDotColor = viewMode === 'ethiopian' ? 'bg-green-500' : 'bg-amber-500';
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -58,12 +68,25 @@ export function DayEventsPanel() {
       <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">
-              {formatGregorianDateLabel(selectedDate)}
-            </h3>
-            <p className="text-xs text-green-600 mt-0.5">
-              {formatEthiopianDateLabel(ethDate)}
-            </p>
+            {viewMode === 'gregorian' ? (
+              <>
+                <h3 className="font-semibold text-gray-900 text-sm">
+                  {formatGregorianDateLabel(selectedDate)}
+                </h3>
+                <p className="text-xs text-green-600 mt-0.5">
+                  {formatEthiopianDateLabel(ethDate)}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-gray-900 text-sm">
+                  {formatEthiopianDateLabel(ethDate)}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formatGregorianDateLabel(selectedDate)}
+                </p>
+              </>
+            )}
           </div>
           <button
             onClick={() => selectDate(null)}
@@ -83,9 +106,7 @@ export function DayEventsPanel() {
           {holidays.map((h, i) => (
             <div key={i} className="flex items-center gap-2 py-1">
               <span
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                  h.type === 'ethiopian' ? 'bg-green-500' : 'bg-amber-500'
-                }`}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${holidayDotColor}`}
               />
               <span className="text-xs font-medium text-gray-700">
                 {h.name}
@@ -122,9 +143,16 @@ export function DayEventsPanel() {
                 className="group relative p-3 rounded-lg border border-gray-100
                            hover:border-gray-200 hover:shadow-sm transition-all"
               >
-                <h5 className="text-sm font-medium text-gray-900">
-                  {event.title}
-                </h5>
+                <div className="flex items-center gap-1.5">
+                  <h5 className="text-sm font-medium text-gray-900">
+                    {event.title}
+                  </h5>
+                  {event.recurrence && event.recurrence !== 'none' && (
+                    <span className="px-1.5 py-px text-[10px] font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                      {RECURRENCE_LABELS[event.recurrence] ?? event.recurrence}
+                    </span>
+                  )}
+                </div>
                 {event.description && (
                   <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                     {event.description}

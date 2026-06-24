@@ -2,8 +2,10 @@ import { useCalendarStore } from '../store/useCalendarStore';
 import {
   GREGORIAN_MONTH_NAMES,
   getCurrentEthiopianYearMonth,
+  getGregorianSpanForEthiopianMonth,
 } from '../utils/gregorianDate';
 import { getEthiopianMonthName } from '../utils/ethiopianDate';
+import { toGeez } from '../utils/geez';
 
 export function CalendarHeader() {
   const {
@@ -13,6 +15,7 @@ export function CalendarHeader() {
     navigateMonth,
     goToToday,
     openImportDialog,
+    openHolidayDialog,
   } = useCalendarStore();
 
   // Compute display title
@@ -25,14 +28,13 @@ export function CalendarHeader() {
     title = `${monthName} ${year}`;
 
     const eth = getCurrentEthiopianYearMonth(currentDate);
-    subtitle = `${getEthiopianMonthName(eth.month)} ${eth.year} EC`;
+    subtitle = `${getEthiopianMonthName(eth.month)} ${toGeez(eth.year)} (${eth.year}) EC`;
   } else {
     const eth = getCurrentEthiopianYearMonth(currentDate);
-    title = `${getEthiopianMonthName(eth.month)} ${eth.year} EC`;
+    title = `${getEthiopianMonthName(eth.month)} ${toGeez(eth.year)} (${eth.year}) EC`;
 
-    const monthName = GREGORIAN_MONTH_NAMES[currentDate.getMonth()];
-    const year = currentDate.getFullYear();
-    subtitle = `${monthName} ${year} GC`;
+    // Show the full Gregorian span the Ethiopian month covers (often two months).
+    subtitle = `${getGregorianSpanForEthiopianMonth(eth.year, eth.month)} GC`;
   }
 
   return (
@@ -101,6 +103,16 @@ export function CalendarHeader() {
             Ethiopian
           </button>
         </div>
+
+        {/* Manage holidays button */}
+        <button
+          onClick={openHolidayDialog}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300
+                     text-gray-700 hover:bg-gray-50 transition-colors"
+          title="Edit holidays"
+        >
+          Holidays
+        </button>
 
         {/* Import button */}
         <button

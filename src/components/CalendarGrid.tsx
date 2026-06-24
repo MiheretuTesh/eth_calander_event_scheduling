@@ -45,16 +45,19 @@ export function CalendarGrid() {
         ))}
       </div>
 
-      {/* Legend */}
+      {/* Legend — adapts to current view mode */}
       <div className="flex flex-wrap items-center gap-4 mt-3 px-1 text-xs text-gray-500">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
-          Ethiopian Holiday
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-amber-500" />
-          Gregorian Holiday
-        </span>
+        {viewMode === 'ethiopian' ? (
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            Ethiopian Holiday
+          </span>
+        ) : (
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Holiday
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-indigo-400" />
           Event
