@@ -8,22 +8,22 @@ import { toGeez } from './geez';
  */
 const ETHIOPIAN_EPOCH = 1724221;
 
-/** Ethiopian month names (1-indexed, index 0 unused) */
+/** Ethiopian month names in Amharic (1-indexed, index 0 unused) */
 export const ETHIOPIAN_MONTH_NAMES: readonly string[] = [
   '',
-  'Meskerem',
-  'Tikimt',
-  'Hidar',
-  'Tahsas',
-  'Tir',
-  'Yekatit',
-  'Megabit',
-  'Miyazia',
-  'Ginbot',
-  'Sene',
-  'Hamle',
-  'Nehase',
-  'Pagume',
+  'መስከረም',
+  'ጥቅምት',
+  'ኅዳር',
+  'ታኅሣሥ',
+  'ጥር',
+  'የካቲት',
+  'መጋቢት',
+  'ሚያዝያ',
+  'ግንቦት',
+  'ሰኔ',
+  'ሐምሌ',
+  'ነሐሴ',
+  'ጳጉሜ',
 ];
 
 // ─── Leap Year Logic ───────────────────────────────────────────

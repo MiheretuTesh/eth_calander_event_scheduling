@@ -13,6 +13,7 @@ import {
   getGregorianYearMonths,
   getEthiopianYearMonths,
   getGregorianSpanForEthiopianMonth,
+  AMHARIC_WEEKDAY_NAMES,
 } from './gregorianDate';
 import {
   getEthiopianMonthName,
@@ -68,14 +69,57 @@ function measureMixed(
   return w;
 }
 
-/** Truncates text (no ellipsis) so it fits maxW, accounting for mixed fonts. */
-function clipMixed(doc: jsPDF, text: string, fontSize: number, maxW: number): string {
-  if (measureMixed(doc, text, fontSize) <= maxW) return text;
-  let t = text;
-  while (t.length > 1 && measureMixed(doc, t, fontSize) > maxW) {
-    t = t.slice(0, -1);
+/**
+ * Word-wraps text to fit maxW, breaking over-long words mid-character.
+ * Returns the wrapped lines (mixed Amharic/Latin aware).
+ */
+function wrapMixed(
+  doc: jsPDF,
+  text: string,
+  fontSize: number,
+  maxW: number
+): string[] {
+  const lines: string[] = [];
+  let cur = '';
+
+  const pushLongWord = (word: string) => {
+    let chunk = '';
+    for (const ch of word) {
+      if (measureMixed(doc, chunk + ch, fontSize) <= maxW) {
+        chunk += ch;
+      } else {
+        if (chunk) lines.push(chunk);
+        chunk = ch;
+      }
+    }
+    cur = chunk;
+  };
+
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const trial = cur ? `${cur} ${word}` : word;
+    if (measureMixed(doc, trial, fontSize) <= maxW) {
+      cur = trial;
+    } else {
+      if (cur) lines.push(cur);
+      if (measureMixed(doc, word, fontSize) > maxW) pushLongWord(word);
+      else cur = word;
+    }
   }
-  return t;
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+/** Draws mixed-font text centered horizontally on centerX at baseline y. */
+function drawMixedCentered(
+  doc: jsPDF,
+  text: string,
+  centerX: number,
+  y: number,
+  fontSize: number,
+  latinStyle: 'normal' | 'bold' = 'normal'
+) {
+  const w = measureMixed(doc, text, fontSize, latinStyle);
+  drawMixed(doc, text, centerX - w / 2, y, fontSize, latinStyle);
 }
 
 /**
@@ -124,7 +168,6 @@ const COLOR_GREEN = [22, 163, 74] as const;
 const COLOR_GRAY = [107, 114, 128] as const;
 const COLOR_LIGHT_GRAY = [229, 231, 235] as const;
 const COLOR_AMBER = [217, 119, 6] as const;
-const COLOR_MUTED = [156, 163, 175] as const;
 
 // ─── Helpers ───────────────────────────────────────────────────
 function setColor(doc: jsPDF, c: readonly [number, number, number]) {
@@ -169,16 +212,19 @@ function renderMonthCalendar(
   setColor(doc, COLOR_GRAY);
   drawMixed(doc, subtitle, CAL_X, 15, 7, 'normal');
 
-  // ── Weekday headers ──
-  doc.setFontSize(6);
-  doc.setFont('helvetica', 'bold');
+  // ── Weekday headers (Monday-first; Amharic in Ethiopian view) ──
+  const weekdayNames = viewMode === 'ethiopian' ? AMHARIC_WEEKDAY_NAMES : WEEKDAY_NAMES;
   setColor(doc, COLOR_GRAY);
   for (let i = 0; i < 7; i++) {
     const x = CAL_X + i * CELL_W + CELL_W / 2;
-    doc.text(WEEKDAY_NAMES[i], x, GRID_TOP - 2, { align: 'center' });
+    drawMixedCentered(doc, weekdayNames[i], x, GRID_TOP - 2, 6, 'bold');
   }
 
   // ── Day cells ──
+  const lineH = 2.6;
+  const nameSize = 3.6;
+  const maxTextW = CELL_W - 1.5;
+
   for (let idx = 0; idx < gridDays.length; idx++) {
     const row = Math.floor(idx / 7);
     const col = idx % 7;
@@ -186,6 +232,15 @@ function renderMonthCalendar(
     const y = GRID_TOP + row * CELL_H;
 
     const day = gridDays[idx];
+
+    // Cell border (always drawn so the grid stays intact)
+    setDraw(doc, COLOR_LIGHT_GRAY);
+    doc.setLineWidth(0.1);
+    doc.rect(x, y, CELL_W, CELL_H);
+
+    // Days outside the current month are left blank.
+    if (!day.isCurrentMonth) continue;
+
     const dayHolidays = getHolidaysForDate(day.gregorianDate, viewMode, holidays);
     const dayEvts = eventsForDate(events, day.gregorianDate);
 
@@ -193,17 +248,12 @@ function renderMonthCalendar(
     if (day.isToday) {
       setFill(doc, [238, 242, 255]);
       doc.rect(x, y, CELL_W, CELL_H, 'F');
-    } else if (!day.isCurrentMonth) {
-      setFill(doc, [249, 250, 251]);
-      doc.rect(x, y, CELL_W, CELL_H, 'F');
     } else if (dayHolidays.length > 0) {
       setFill(doc, viewMode === 'ethiopian' ? [240, 253, 244] : [255, 251, 235]);
       doc.rect(x, y, CELL_W, CELL_H, 'F');
     }
-
-    // Cell border
+    // Re-stroke the border in case a fill painted over it.
     setDraw(doc, COLOR_LIGHT_GRAY);
-    doc.setLineWidth(0.1);
     doc.rect(x, y, CELL_W, CELL_H);
 
     // Date numbers — Ethiopian dates render in Ge'ez via the embedded font.
@@ -211,7 +261,7 @@ function renderMonthCalendar(
     const gregDay = day.gregorianDate.getDate();
     const primaryIsEth = viewMode === 'ethiopian';
 
-    setColor(doc, day.isCurrentMonth ? COLOR_INK : COLOR_MUTED);
+    setColor(doc, COLOR_INK);
     doc.setFontSize(7);
     if (primaryIsEth) {
       doc.setFont(ETHIOPIC_FONT, 'normal');
@@ -231,23 +281,24 @@ function renderMonthCalendar(
       doc.text(toGeez(ethDay), x + CELL_W - 1, y + 3.5, { align: 'right' });
     }
 
-    // Holiday + event names stacked beneath the date (mixed Amharic/Latin)
+    // Holiday + event names beneath the date, word-wrapped (mixed Amharic/Latin)
     let textY = y + 7.5;
-    const lineH = 2.6;
-    const nameSize = 3.6;
-    const maxTextW = CELL_W - 1.5;
+    const entries = [
+      ...dayHolidays.map((h) => ({
+        text: h.name,
+        color: viewMode === 'ethiopian' ? COLOR_GREEN : COLOR_AMBER,
+      })),
+      ...dayEvts.map((e) => ({ text: e.title, color: COLOR_INDIGO })),
+    ];
 
-    for (const h of dayHolidays) {
-      if (textY > y + CELL_H - 1) break;
-      setColor(doc, viewMode === 'ethiopian' ? COLOR_GREEN : COLOR_AMBER);
-      drawMixed(doc, clipMixed(doc, h.name, nameSize, maxTextW), x + 1, textY, nameSize);
-      textY += lineH;
-    }
-    for (const e of dayEvts) {
-      if (textY > y + CELL_H - 1) break;
-      setColor(doc, COLOR_INDIGO);
-      drawMixed(doc, clipMixed(doc, e.title, nameSize, maxTextW), x + 1, textY, nameSize);
-      textY += lineH;
+    for (const entry of entries) {
+      setColor(doc, entry.color);
+      for (const line of wrapMixed(doc, entry.text, nameSize, maxTextW)) {
+        if (textY > y + CELL_H - 0.8) break;
+        drawMixed(doc, line, x + 1, textY, nameSize);
+        textY += lineH;
+      }
+      if (textY > y + CELL_H - 0.8) break;
     }
   }
 }

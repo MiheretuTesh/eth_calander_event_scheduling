@@ -5,11 +5,15 @@ import {
   getGregorianMonthGrid,
   getEthiopianMonthGrid,
   WEEKDAY_NAMES,
+  AMHARIC_WEEKDAY_NAMES,
 } from '../utils/gregorianDate';
 import { convertGregorianToEthiopian } from '../utils/ethiopianDate';
 
 export function CalendarGrid() {
   const { viewMode, currentDate } = useCalendarStore();
+
+  const weekdayNames =
+    viewMode === 'ethiopian' ? AMHARIC_WEEKDAY_NAMES : WEEKDAY_NAMES;
 
   const gridDays = useMemo(() => {
     if (viewMode === 'gregorian') {
@@ -26,7 +30,7 @@ export function CalendarGrid() {
     <div className="w-full">
       {/* Weekday headers */}
       <div className="grid grid-cols-7 mb-1">
-        {WEEKDAY_NAMES.map((name) => (
+        {weekdayNames.map((name) => (
           <div
             key={name}
             className="text-center text-xs sm:text-sm font-medium text-gray-500 py-2"

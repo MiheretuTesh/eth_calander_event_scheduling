@@ -28,15 +28,32 @@ export const GREGORIAN_MONTH_NAMES: readonly string[] = [
   'December',
 ];
 
+// Weeks run Monday → Sunday.
 export const WEEKDAY_NAMES: readonly string[] = [
-  'Sun',
   'Mon',
   'Tue',
   'Wed',
   'Thu',
   'Fri',
   'Sat',
+  'Sun',
 ];
+
+// Amharic weekday names, also Monday → Sunday.
+export const AMHARIC_WEEKDAY_NAMES: readonly string[] = [
+  'ሰኞ',
+  'ማክሰኞ',
+  'ረቡዕ',
+  'ሐሙስ',
+  'ዓርብ',
+  'ቅዳሜ',
+  'እሁድ',
+];
+
+/** Day-of-week offset from Monday (Mon=0 … Sun=6) for a JS Date. */
+function mondayOffset(date: Date): number {
+  return (getDay(date) + 6) % 7;
+}
 
 // ─── Leap Year ─────────────────────────────────────────────────
 /**
@@ -59,13 +76,12 @@ export function isGregorianLeapYear(year: number): boolean {
 export function getGregorianMonthGrid(year: number, month: number): GridDay[] {
   const firstOfMonth = new Date(year, month, 1);
   const lastOfMonth = endOfMonth(firstOfMonth);
-  const startDayOfWeek = getDay(firstOfMonth); // 0 = Sunday
 
   const today = new Date();
   const days: GridDay[] = [];
 
-  // Calculate the start date (may be in previous month)
-  const gridStart = addDays(firstOfMonth, -startDayOfWeek);
+  // Calculate the start date (may be in previous month). Weeks start Monday.
+  const gridStart = addDays(firstOfMonth, -mondayOffset(firstOfMonth));
 
   for (let i = 0; i < 42; i++) {
     const date = addDays(gridStart, i);
@@ -97,12 +113,12 @@ export function getEthiopianMonthGrid(
     day: 1,
   });
   const daysInMonth = getEthiopianMonthDays(ethYear, ethMonth);
-  const startDayOfWeek = getDay(firstDayGregorian); // 0 = Sunday
 
   const today = new Date();
   const days: GridDay[] = [];
 
-  const gridStart = addDays(firstDayGregorian, -startDayOfWeek);
+  // Weeks start Monday.
+  const gridStart = addDays(firstDayGregorian, -mondayOffset(firstDayGregorian));
 
   for (let i = 0; i < 42; i++) {
     const date = addDays(gridStart, i);

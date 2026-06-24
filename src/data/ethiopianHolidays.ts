@@ -6,54 +6,54 @@ import type { FixedHoliday, MoveableHoliday } from '../types/calendar';
 // ─────────────────────────────────────────────────────────────────
 
 export const ETHIOPIAN_FIXED_HOLIDAYS: FixedHoliday[] = [
-  // ── Meskerem (Month 1) ──
-  { name: 'Enkutatash (Ethiopian New Year)', month: 1, day: 1 },
-  { name: 'Kidus Yohannes (St. John\'s Day)', month: 1, day: 1 },
-  { name: 'Demera (Eve of Meskel)', month: 1, day: 16 },
-  { name: 'Meskel (Finding of True Cross)', month: 1, day: 17 },
+  // ── መስከረም (Month 1) ──
+  { name: 'እንቁጣጣሽ', month: 1, day: 1 },
+  { name: 'ቅዱስ ዮሐንስ', month: 1, day: 1 },
+  { name: 'ደመራ', month: 1, day: 16 },
+  { name: 'መስቀል', month: 1, day: 17 },
 
-  // ── Tikimt (Month 2) ──
-  { name: 'Kidus Mikael (St. Michael)', month: 2, day: 12 },
+  // ── ጥቅምት (Month 2) ──
+  { name: 'ቅዱስ ሚካኤል', month: 2, day: 12 },
 
-  // ── Hidar (Month 3) ──
-  { name: 'Hidar Tsion (St. Mary of Zion)', month: 3, day: 21 },
-  { name: 'Kidus Gabriel (St. Gabriel)', month: 3, day: 19 },
+  // ── ኅዳር (Month 3) ──
+  { name: 'ኅዳር ጽዮን', month: 3, day: 21 },
+  { name: 'ቅዱስ ገብርኤል', month: 3, day: 19 },
 
-  // ── Tahsas (Month 4) ──
-  { name: 'Genna Eve (Christmas Eve)', month: 4, day: 28 },
-  { name: 'Genna / Lidet (Ethiopian Christmas)', month: 4, day: 29 },
+  // ── ታኅሣሥ (Month 4) ──
+  { name: 'የገና ዋዜማ', month: 4, day: 28 },
+  { name: 'ገና / ልደት', month: 4, day: 29 },
 
-  // ── Tir (Month 5) ──
-  { name: 'Ketera (Eve of Timkat)', month: 5, day: 10 },
-  { name: 'Timkat (Ethiopian Epiphany)', month: 5, day: 11 },
-  { name: 'Kidus Mikael (St. Michael)', month: 5, day: 12 },
+  // ── ጥር (Month 5) ──
+  { name: 'ከተራ', month: 5, day: 10 },
+  { name: 'ጥምቀት', month: 5, day: 11 },
+  { name: 'ቅዱስ ሚካኤል', month: 5, day: 12 },
 
-  // ── Yekatit (Month 6) ──
-  { name: 'Adwa Victory Day', month: 6, day: 23 },
+  // ── የካቲት (Month 6) ──
+  { name: 'የአድዋ ድል በዓል', month: 6, day: 23 },
 
-  // ── Megabit (Month 7) ──
-  { name: 'Kidus Gabriel (St. Gabriel)', month: 7, day: 19 },
+  // ── መጋቢት (Month 7) ──
+  { name: 'ቅዱስ ገብርኤል', month: 7, day: 19 },
 
-  // ── Miyazia (Month 8) ──
-  { name: 'Kidus Giorgis (St. George)', month: 8, day: 23 },
-  { name: 'Miyazia 27 - Patriots\' Day (Arbegnoch Qen)', month: 8, day: 27 },
+  // ── ሚያዝያ (Month 8) ──
+  { name: 'ቅዱስ ጊዮርጊስ', month: 8, day: 23 },
+  { name: 'የአርበኞች ቀን', month: 8, day: 27 },
 
-  // ── Ginbot (Month 9) ──
-  { name: 'Downfall of the Derg', month: 9, day: 20 },
+  // ── ግንቦት (Month 9) ──
+  { name: 'የደርግ ውድቀት', month: 9, day: 20 },
 
-  // ── Sene (Month 10) ──
-  { name: 'Kidus Petros we Paulos (Sts. Peter & Paul)', month: 10, day: 29 },
+  // ── ሰኔ (Month 10) ──
+  { name: 'ቅዱስ ጴጥሮስ ወጳውሎስ', month: 10, day: 29 },
 
-  // ── Hamle (Month 11) ──
-  { name: 'Tsome Filseta Begins (Assumption Fast)', month: 11, day: 1 },
+  // ── ሐምሌ (Month 11) ──
+  { name: 'የፍልሰታ ጾም መግቢያ', month: 11, day: 1 },
 
-  // ── Nehase (Month 12) ──
-  { name: 'Kidane Mihret (Covenant of Mercy)', month: 12, day: 1 },
-  { name: 'Buhe (Transfiguration of Jesus)', month: 12, day: 13 },
-  { name: 'Filseta (Assumption of Mary)', month: 12, day: 16 },
+  // ── ነሐሴ (Month 12) ──
+  { name: 'ኪዳነ ምሕረት', month: 12, day: 1 },
+  { name: 'ቡሄ', month: 12, day: 13 },
+  { name: 'ፍልሰታ', month: 12, day: 16 },
 
-  // ── Pagume (Month 13) ──
-  { name: 'Kidus Yohannes Eve', month: 13, day: 5 },
+  // ── ጳጉሜ (Month 13) ──
+  { name: 'የቅዱስ ዮሐንስ ዋዜማ', month: 13, day: 5 },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -63,8 +63,8 @@ export const ETHIOPIAN_FIXED_HOLIDAYS: FixedHoliday[] = [
 // ─────────────────────────────────────────────────────────────────
 
 export const ETHIOPIAN_GC_HOLIDAYS: FixedHoliday[] = [
-  { name: 'International Labour Day', month: 5, day: 1 },
-  { name: 'Patriots\' Victory Day (May 5)', month: 5, day: 5 },
+  { name: 'የዓለም የሠራተኞች ቀን', month: 5, day: 1 },
+  { name: 'የአርበኞች የድል ቀን', month: 5, day: 5 },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -75,15 +75,15 @@ export const ETHIOPIAN_GC_HOLIDAYS: FixedHoliday[] = [
 // ─────────────────────────────────────────────────────────────────
 
 export const ETHIOPIAN_MOVEABLE_HOLIDAYS: MoveableHoliday[] = [
-  { name: 'Abiy Tsom (Great Lent Begins)', offsetFromEaster: -55 },
-  { name: 'Debre Zeit (Mount of Olives)', offsetFromEaster: -41 },
-  { name: 'Hosanna (Palm Sunday)', offsetFromEaster: -7 },
-  { name: 'Hamus (Holy Thursday)', offsetFromEaster: -3 },
-  { name: 'Siklet (Good Friday)', offsetFromEaster: -2 },
-  { name: 'Kidus Kidame (Holy Saturday)', offsetFromEaster: -1 },
-  { name: 'Fasika / Tensae (Easter Sunday)', offsetFromEaster: 0 },
-  { name: 'Dagme Tensae (Easter Monday)', offsetFromEaster: 1 },
-  { name: 'Erget (Ascension)', offsetFromEaster: 39 },
-  { name: 'Paraklitos (Pentecost)', offsetFromEaster: 49 },
-  { name: 'Tsome Hawariat Begins (Apostles\' Fast)', offsetFromEaster: 50 },
+  { name: 'ዐቢይ ጾም', offsetFromEaster: -55 },
+  { name: 'ደብረ ዘይት', offsetFromEaster: -41 },
+  { name: 'ሆሣዕና', offsetFromEaster: -7 },
+  { name: 'ጸሎተ ሐሙስ', offsetFromEaster: -3 },
+  { name: 'ስቅለት', offsetFromEaster: -2 },
+  { name: 'ቅዱስ ቅዳሜ', offsetFromEaster: -1 },
+  { name: 'ፋሲካ / ትንሣኤ', offsetFromEaster: 0 },
+  { name: 'ዳግማይ ትንሣኤ', offsetFromEaster: 1 },
+  { name: 'ዕርገት', offsetFromEaster: 39 },
+  { name: 'ጰራቅሊጦስ', offsetFromEaster: 49 },
+  { name: 'የሐዋርያት ጾም መግቢያ', offsetFromEaster: 50 },
 ];

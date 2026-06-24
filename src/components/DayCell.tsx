@@ -26,6 +26,13 @@ export function DayCell({ day, viewMode }: DayCellProps) {
     [events, day.gregorianDate]
   );
 
+  // Days outside the current month are left blank (no number, no content).
+  if (!day.isCurrentMonth) {
+    return (
+      <div className="min-h-[96px] sm:min-h-[120px] bg-gray-50/40" aria-hidden="true" />
+    );
+  }
+
   const hasHoliday = dayHolidays.length > 0;
 
   // Holiday color: green for Ethiopian mode, amber for Gregorian mode
@@ -48,14 +55,13 @@ export function DayCell({ day, viewMode }: DayCellProps) {
       type="button"
       onClick={() => selectDate(day.gregorianDate)}
       className={`
-        relative flex flex-col items-stretch text-left
+        relative flex flex-col items-stretch text-left w-full
         min-h-[96px] sm:min-h-[120px] p-1 sm:p-1.5
         rounded-lg transition-all duration-150 cursor-pointer
-        border border-transparent overflow-hidden
-        ${!day.isCurrentMonth ? 'opacity-40' : ''}
+        border border-transparent
         ${day.isToday ? 'bg-indigo-50 ring-2 ring-indigo-400' : ''}
         ${isSelected && !day.isToday ? 'bg-blue-50 border-blue-300' : ''}
-        ${!day.isToday && !isSelected && day.isCurrentMonth ? 'hover:bg-gray-50 hover:border-gray-200' : ''}
+        ${!day.isToday && !isSelected ? 'hover:bg-gray-50 hover:border-gray-200' : ''}
         ${hasHoliday && !day.isToday && !isSelected ? holidayBg : ''}
       `}
       title={[...dayHolidays.map((h) => h.name), ...dayEvents.map((e) => e.title)].join(', ') || undefined}
@@ -66,8 +72,7 @@ export function DayCell({ day, viewMode }: DayCellProps) {
           className={`
             text-sm sm:text-base font-semibold leading-tight
             ${day.isToday ? 'text-indigo-700' : ''}
-            ${isSelected && !day.isToday ? 'text-blue-700' : ''}
-            ${!day.isCurrentMonth ? 'text-gray-400' : 'text-gray-800'}
+            ${isSelected && !day.isToday ? 'text-blue-700' : 'text-gray-800'}
           `}
         >
           {primaryDate}
@@ -76,19 +81,18 @@ export function DayCell({ day, viewMode }: DayCellProps) {
           className={`
             text-[10px] sm:text-xs leading-tight
             ${viewMode === 'gregorian' ? 'text-green-600' : 'text-gray-500'}
-            ${!day.isCurrentMonth ? 'opacity-50' : ''}
           `}
         >
           {secondaryDate}
         </span>
       </div>
 
-      {/* Holiday + event names */}
-      <div className="mt-1 flex flex-col gap-0.5 overflow-hidden">
+      {/* Holiday + event names (wrap rather than clip) */}
+      <div className="mt-1 flex flex-col gap-0.5">
         {dayHolidays.map((h, i) => (
           <span
             key={`h-${i}`}
-            className={`block truncate rounded px-1 py-px text-[9px] sm:text-[10px] font-medium leading-tight ${holidayChipBg} ${holidayText}`}
+            className={`block rounded px-1 py-px text-[9px] sm:text-[10px] font-medium leading-tight break-words whitespace-normal ${holidayChipBg} ${holidayText}`}
           >
             {h.name}
           </span>
@@ -96,7 +100,7 @@ export function DayCell({ day, viewMode }: DayCellProps) {
         {dayEvents.map((e) => (
           <span
             key={e.id}
-            className="block truncate rounded px-1 py-px text-[9px] sm:text-[10px] font-medium leading-tight bg-indigo-100 text-indigo-700"
+            className="block rounded px-1 py-px text-[9px] sm:text-[10px] font-medium leading-tight break-words whitespace-normal bg-indigo-100 text-indigo-700"
           >
             {e.title}
           </span>
